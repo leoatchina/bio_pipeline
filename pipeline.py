@@ -25,10 +25,10 @@ def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def caluate_md5(file_full):
+def caluate_md5(file_path):
     try:
         myhash = hashlib.md5()
-        with open(file_full, 'rb') as f:
+        with open(file_path, 'rb') as f:
             while True:
                 b = f.read(8096)
                 if not b:
@@ -39,30 +39,38 @@ def caluate_md5(file_full):
         raise e
 
 
-def compare_md5(file_full, md5):
+def compare_md5(file_path, md5):
     try:
-        if not os.path.isfile(file_full):
-            raise Exception("%s is not a file" % file_full)
+        if not os.path.isfile(file_path):
+            raise Exception("%s is not a file" % file_path)
         if md5:
-            return (True if md5 == caluate_md5(file_full) else False)
+            return (True if md5 == caluate_md5(file_path) else False)
         else:
             raise Exception("file or md5 absent")
     except Exception as e:
-        print(file_full, e)
+        print(file_path, e)
         return False
 
 
-def check_md5infile(file_full, md5_file_full):
+def check_md5(file_path, md5_file_path):
     try:
-        fl = file_full.split("/")[-1]
+        md5 = os.popen('cat ' + md5_file_path).readlines()[0].strip()
+        return compare_md5(file_path, md5)
+    except Exception as e:
+        raise e
+
+
+def check_md5infile(file_path, md5_file_path):
+    try:
+        fl = file_path.split("/")[-1]
         md5 = ""
-        for line in os.popen("cat %s" % md5_file_full).readlines():
+        for line in os.popen("cat %s" % md5_file_path).readlines():
             ln = line.strip("\n")
             if fl == ln.split("  ")[1]:
                 md5 = ln.split("  ")[0]
                 break
         if md5:
-            return compare_md5(file_full, md5)
+            return compare_md5(file_path, md5)
         else:
             return False
     except Exception as e:
@@ -166,12 +174,12 @@ class Pipeline(object):
         self.pool.join()
         self.pool.terminate()
 
-    def print(self):
-        for ID in self.pipelines:
-            print("===== %s ======" % ID)
-            pipeline = self.pipelines[ID]
-            for each in pipeline:
-                print(each)
+    # def print(self):
+    #     for ID in self.pipelines:
+    #         print("===== %s ======" % ID)
+    #         pipeline = self.pipelines[ID]
+    #         for each in pipeline:
+    #             print(each)
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
