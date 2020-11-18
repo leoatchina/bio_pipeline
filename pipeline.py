@@ -140,7 +140,8 @@ class Pipeline(object):
                 for line in lines:
                     if len(line) > 6:
                         line[5] = ",".join(line[5:])
-                    ID, procedure, target, start_time, end_time, cost_time = line[:6]
+                    line = [each.strip() for each in line[:6]] 
+                    ID, procedure, target, start_time, end_time, cost_time = line
                     if target is None or len(target.strip()) == 0:
                         target = ""
                     runned = "%s:%s:%s" % (ID, procedure, target)
