@@ -152,11 +152,10 @@ class Pipeline(object):
 
     def append(self, ID, procedure, cmd, target = None, log = None, run_sync = False, record_on_error = False):
         """
-            有些procedure, 是'无视'target,可以并行跑
-            如在一个procedure里，没有指明target，或者指向一致的情况下本来就是并行的
-            增加run_sync, 可以在target不一致的情况下,并行运行.
+        - 在一个procedure里，没有指明target, 或者target一致的情况下，相应procedue是能并行跑
+        - 增加run_sync, 可以在target不一致的情况下,并行运行.
         """
-        if target is None or len(target.strip()) == 0:
+        if target is None or len(target.strip()) == 0 or run_sync == True:
             target = ""
         runned     = "%s:%s:%s" % (ID, procedure, target)
         if runned in self.run_array:
@@ -175,12 +174,12 @@ class Pipeline(object):
         self.pool.join()
         self.pool.terminate()
 
-    # def print(self):
-    #     for ID in self.pipelines:
-    #         print("===== %s ======" % ID)
-    #         pipeline = self.pipelines[ID]
-    #         for each in pipeline:
-    #             print(each)
+    def print(self):
+        for ID in self.pipelines:
+            print("===== %s ======" % ID)
+            pipeline = self.pipelines[ID]
+            for cmd in pipeline:
+                print(cmd)
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
