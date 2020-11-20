@@ -153,20 +153,19 @@ class Pipeline(object):
                 os.system("echo 'ID,procedure,target,start_time,end_time,cost_time' > %s" % self.run_csv)
 
     def append(self, ID, procedure, cmd, target = None, log = None, run_sync = False, record_on_error = False):
-        """
-        - 在一个procedure里，没有指明target, 或者target一致的情况下，相应procedue是能并行跑
-        - 增加run_sync, 可以在target不一致的情况下,并行运行.
-        """
         if target is None or len(target.strip()) == 0:
             target = ""
         runned = "%s:%s:%s" % (ID, procedure, target)
         if runned in self.run_array:
             pass
         else:
+            """ TODO
+            run_sync参数, async run the procedure, cmd of differrnet target, default is False
+            """
             if target == '' or run_sync:
                 pass
             if self.pipelines.get(ID, None):
-                self.pipelines[ID].append((procedure, cmd, target, log,  record_on_error))
+                self.pipelines[ID].append((procedure, cmd, target, log, record_on_error))
             else:
                 self.pipelines[ID] = deque([(procedure, cmd, target, log, record_on_error)])
 
