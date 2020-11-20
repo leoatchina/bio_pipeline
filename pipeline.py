@@ -14,6 +14,8 @@ from collections import deque
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 
+from collections import OrderedDict 
+
 meminfo  = open('/proc/meminfo').read()
 matched  = re.search(r'^MemTotal:\s+(\d+)', meminfo)
 sys_mem  = int(int(matched.groups()[0])/1024/1024)
@@ -124,7 +126,7 @@ class Pipeline(object):
         # run_array to record run status
         # for a run_csv, the first column records diffrerent ids for samples
         self.run_csv   = run_csv
-        self.run_array = {}
+        self.run_array = OrderedDict()
         self.test      = test
         self.sync_cnt  = sync_cnt
         # One ID has its pipeline : pipelines[ID]
@@ -132,11 +134,11 @@ class Pipeline(object):
         self.pool      = Pool(sync_cnt, init_worker, maxtasksperchild = sync_cnt)
         self.pool.terminate()
         if self.run_csv:
-            if os.path.exists(self.run_csv):
+            if os.path.isfile(self.run_csv):
                 lines = read_csv(self.run_csv)
                 # skip header
                 lines = lines[1:]
-                # sometimes record time cover more than 1 cells, so combine them
+                # sometimes recorded time cover more than 1 cells, so combine them
                 for line in lines:
                     if len(line) > 6:
                         line[5] = ",".join(line[5:])
@@ -155,14 +157,16 @@ class Pipeline(object):
         - 在一个procedure里，没有指明target, 或者target一致的情况下，相应procedue是能并行跑
         - 增加run_sync, 可以在target不一致的情况下,并行运行.
         """
-        if target is None or len(target.strip()) == 0 or run_sync == True:
+        if target is None or len(target.strip()) == 0:
             target = ""
-        runned     = "%s:%s:%s" % (ID, procedure, target)
+        runned = "%s:%s:%s" % (ID, procedure, target)
         if runned in self.run_array:
             pass
         else:
+            if target == '' or run_sync:
+                pass
             if self.pipelines.get(ID, None):
-                self.pipelines[ID].append((procedure, cmd, target, log, record_on_error))
+                self.pipelines[ID].append((procedure, cmd, target, log,  record_on_error))
             else:
                 self.pipelines[ID] = deque([(procedure, cmd, target, log, record_on_error)])
 
@@ -180,6 +184,10 @@ class Pipeline(object):
             pipeline = self.pipelines[ID]
             for cmd in pipeline:
                 print(cmd)
+
+    def print_runned(self):
+        for runned in self.run_array:
+            print(runned)
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod

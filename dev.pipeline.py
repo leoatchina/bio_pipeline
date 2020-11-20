@@ -175,7 +175,7 @@ class Pipeline(object):
     def run(ID, pipeline, test, run_csv):
         for step in pipeline:
             try:
-                procedure, cmd, target, log, record_on_error = step
+                procedure, cmd, target, log, run_sync, record_on_error = step
                 start_time = datetime.datetime.now()
                 now        = start_time.strftime("%Y-%m-%d %H:%M:%S")
                 print("================ %s ===============\n%s\n" % (now, cmd))
