@@ -14,7 +14,7 @@ from collections import deque
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 
-from collections import OrderedDict 
+from collections import OrderedDict
 
 meminfo  = open('/proc/meminfo').read()
 matched  = re.search(r'^MemTotal:\s+(\d+)', meminfo)
@@ -142,32 +142,33 @@ class Pipeline(object):
                 for line in lines:
                     if len(line) > 6:
                         line[5] = ",".join(line[5:])
-                    line = [each.strip() for each in line[:6]] 
-                    ID, procedure, target, start_time, end_time, cost_time = line
+                    line = [each.strip() for each in line[:6]]
+                    ID, mark, target, start_time, end_time, cost_time = line
                     if target is None or len(target.strip()) == 0:
                         target = ""
-                    runned = "%s:%s:%s" % (ID, procedure, target)
+                    runned = "%s:%s:%s" % (ID, mark, target)
                     self.run_array[runned] = "%s %s %s" % (start_time, end_time, cost_time)
             else:
                 # create record csv if not exists
-                os.system("echo 'ID,procedure,target,start_time,end_time,cost_time' > %s" % self.run_csv)
+                os.system("echo 'ID,mark,target,start_time,end_time,cost_time' > %s" % self.run_csv)
 
-    def append(self, ID, procedure, cmd, target = None, log = None, run_sync = False, record_on_error = False):
+    def append(self, ID, mark, cmd, target = None, log = None, run_sync = False, record_on_error = False):
+        """ TODO
+            run_sync参数, async run the mark, cmd of differrnet target, default is False
+        """
         if target is None or len(target.strip()) == 0:
             target = ""
-        runned = "%s:%s:%s" % (ID, procedure, target)
+        runned = "%s:%s:%s" % (ID, mark, target)
         if runned in self.run_array:
-            pass
-        else:
-            """ TODO
-            run_sync参数, async run the procedure, cmd of differrnet target, default is False
-            """
-            if target == '' or run_sync:
-                pass
             if self.pipelines.get(ID, None):
-                self.pipelines[ID].append((procedure, cmd, target, log, record_on_error))
+                self.pipelines[ID].append((mark, cmd, target, log, record_on_error, True))
             else:
-                self.pipelines[ID] = deque([(procedure, cmd, target, log, record_on_error)])
+                self.pipelines[ID] = deque([(mark, cmd, target, log, record_on_error, True)])
+        else:
+            if self.pipelines.get(ID, None):
+                self.pipelines[ID].append((mark, cmd, target, log, record_on_error, False))
+            else:
+                self.pipelines[ID] = deque([(mark, cmd, target, log, record_on_error, False)])
 
     def run_pipeline(self):
         self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
@@ -181,19 +182,26 @@ class Pipeline(object):
         for ID in self.pipelines:
             print("===== %s ======" % ID)
             pipeline = self.pipelines[ID]
-            for cmd in pipeline:
-                print(cmd)
+            for procudue in pipeline:
+                print(procudue)
+            print()
 
     def print_runned(self):
-        for runned in self.run_array:
-            print(runned)
+        for ID in self.pipelines:
+            print("===== %s ======" % ID)
+            pipeline = self.pipelines[ID]
+            for mark in pipeline:
+                print(mark)
+            print()
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
     def run(ID, pipeline, test, run_csv):
         for step in pipeline:
             try:
-                procedure, cmd, target, log, record_on_error = step
+                mark, cmd, target, log, record_on_error, runned = step
+                if runned:
+                    continue
                 start_time = datetime.datetime.now()
                 now        = start_time.strftime("%Y-%m-%d %H:%M:%S")
                 print("================ %s ===============\n%s\n" % (now, cmd))
@@ -209,18 +217,18 @@ class Pipeline(object):
                     start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
                     end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
                     if run_csv:
-                        write_to_csv(run_csv, ID, procedure, target, start_time_reform, end_time_reform, cost_time_reform)
-                    print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, procedure, start_time_reform, end_time_reform, cost_time_reform))
+                        write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
+                    print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
             except subprocess.CalledProcessError:
                 end_time          = datetime.datetime.now()
                 cost_time_reform  = str(end_time - start_time)
                 start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
                 end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
                 if record_on_error and run_csv:
-                    write_to_csv(run_csv, ID, procedure, target, start_time_reform, end_time_reform, cost_time_reform)
-                    print("{}:{}, started at {}, errored at {}, but still record".format(ID, procedure, start_time_reform, end_time_reform))
+                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
+                    print("{}:{}, started at {}, errored at {}, but still record".format(ID, mark, start_time_reform, end_time_reform))
                 else:
-                    print("{}:{}, started at {}, errored at {}, and not record".format(ID, procedure, start_time_reform, end_time_reform))
+                    print("{}:{}, started at {}, errored at {}, and not record".format(ID, mark, start_time_reform, end_time_reform))
             except Exception as ex:
                 traceback.print_exc()
                 raise ex
