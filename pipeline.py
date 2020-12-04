@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 # coding:utf8
-'''Author leoatchina'''
+# type: ignore
 import os
 import traceback
 import collections
@@ -178,28 +179,39 @@ class Pipeline(object):
         self.pool.join()
         self.pool.terminate()
 
-    def print(self):
-        for ID in self.pipelines:
-            print("===== %s ======" % ID)
-            pipeline = self.pipelines[ID]
-            for procudue in pipeline:
-                print(procudue)
+    def print(self, print_runned = 0, ID = None):
+        for id in self.pipelines:
+            # 只打印指定的id
+            if ID is not None:
+                if isinstance(ID, list) or isinstance(ID, tuple):
+                    if not id in ID:
+                        continue
+                elif id != ID:
+                    continue
+            print("===== %s ======" % id)
+            pipeline = self.pipelines[id]
+            for procedure in pipeline:
+                mark, cmd, target, log, record_on_error, runned = procedure
+                if print_runned == 2:
+                    print(cmd)
+                elif print_runned == 1 and runned:
+                    print(cmd)
+                elif not runned:
+                    print(cmd)
             print()
 
-    def print_runned(self):
-        for ID in self.pipelines:
-            print("===== %s ======" % ID)
-            pipeline = self.pipelines[ID]
-            for mark in pipeline:
-                print(mark)
-            print()
+    def print_runned(self, ID = None):
+        self.print(1, ID)
+
+    def print_all(self, ID = None):
+        self.print(2, ID)
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
     def run(ID, pipeline, test, run_csv):
-        for step in pipeline:
+        for procedure in pipeline:
             try:
-                mark, cmd, target, log, record_on_error, runned = step
+                mark, cmd, target, log, record_on_error, runned = procedure
                 if runned:
                     continue
                 start_time = datetime.datetime.now()
