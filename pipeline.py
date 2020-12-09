@@ -193,10 +193,13 @@ class Pipeline(object):
             for procedure in pipeline:
                 mark, cmd, target, log, record_on_error, runned = procedure
                 if print_runned == 2:
+                    print("========================= %s =============================" % mark)
                     print(cmd)
                 elif print_runned == 1 and runned:
+                    print("========================= %s =============================" % mark)
                     print(cmd)
                 elif not runned:
+                    print("========================= %s =============================" % mark)
                     print(cmd)
             print()
 
