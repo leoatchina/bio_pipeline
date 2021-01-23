@@ -184,7 +184,7 @@ class Pipeline(object):
             # 只打印指定的id
             if ID is not None:
                 if isinstance(ID, list) or isinstance(ID, tuple):
-                    if not id in ID:
+                    if id not in ID:
                         continue
                 elif id != ID:
                     continue
