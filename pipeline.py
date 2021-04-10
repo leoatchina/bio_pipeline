@@ -152,10 +152,11 @@ class Pipeline(object):
             else:
                 # create record csv if not exists
                 os.system("echo 'ID,mark,target,start_time,end_time,cost_time' > %s" % self.run_csv)
-
-    def append(self, ID, mark, cmd, target = None, log = None, run_sync = False, record_on_error = False):
-        """ TODO
-            run_sync参数, async run the mark, cmd of differrnet target, default is False
+    #
+    def append(self, ID, mark, cmd, is_system_cmd = 1, target = None, log = None, run_sync = False, record_on_error = False):
+        """
+        1.run_sync参数, async run the mark, cmd of differrnet target, default is False
+        2. TODO, is_system_cmd mean use os.popen(cmd), otherwise python command
         """
         if target is None or len(target.strip()) == 0:
             target = ""
@@ -171,20 +172,15 @@ class Pipeline(object):
             else:
                 self.pipelines[ID] = deque([(mark, cmd, target, log, record_on_error, False)])
 
-    def run_pipeline(self):
-        self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
-        for ID, pipeline in self.pipelines.items():
-            self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.test, self.run_csv))
-        self.pool.close()
-        self.pool.join()
-        self.pool.terminate()
-
-    def print(self, print_runned = 0, ID = None):
+    def print_pipeline(self, print_runned = 0, ID = None):
+        """
+        print command
+        """
         for id in self.pipelines:
             # 只打印指定的id
             if ID is not None:
                 if isinstance(ID, list) or isinstance(ID, tuple):
-                    if id not in ID:
+                    if not id in ID:
                         continue
                 elif id != ID:
                     continue
@@ -204,10 +200,20 @@ class Pipeline(object):
             print()
 
     def print_runned(self, ID = None):
-        self.print(1, ID)
+        """print runned commands"""
+        self.print_pipelinprint_pipelinee(1, ID)
 
     def print_all(self, ID = None):
-        self.print(2, ID)
+        """print_pipelineprint alll commands"""
+        self.print_pipeline(2, ID)
+
+    def run_pipeline(self):
+        self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
+        for ID, pipeline in self.pipelines.items():
+            self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.test, self.run_csv))
+        self.pool.close()
+        self.pool.join()
+        self.pool.terminate()
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
