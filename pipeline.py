@@ -154,7 +154,7 @@ class Pipeline(object):
     #
     def append(self, ID, mark, cmd, is_system_cmd = 1, target = None, log = None, run_sync = False, record_on_error = False):
         """
-        1.run_sync参数, async run the mark, cmd of differrnet target, default is False
+        1. TODO run_syn, diffrerent targets of same mark will run async, for example, different lan sequence file from a same source
         2. TODO, is_system_cmd mean use os.popen(cmd), otherwise python command
         """
         if target is None or len(target.strip()) == 0:
