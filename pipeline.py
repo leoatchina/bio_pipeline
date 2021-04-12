@@ -123,12 +123,11 @@ class Pipeline(object):
     def terminate(self):
         self.pool.terminate()
 
-    def __init__(self, run_csv = None, sync_cnt = 2, test = 1):
+    def __init__(self, run_csv=None, sync_cnt=2):
         # run_array to record run status
         # for a run_csv, the first column records diffrerent ids for samples
         self.run_csv   = run_csv
         self.run_array = OrderedDict()
-        self.test      = test
         self.sync_cnt  = sync_cnt
         # One ID has its pipeline : pipelines[ID]
         self.pipelines = collections.OrderedDict()
@@ -201,23 +200,30 @@ class Pipeline(object):
 
     def print_runned(self, ID = None):
         """print runned commands"""
-        self.print_pipelinprint_pipelinee(1, ID)
+        self.print_pipeline(1, ID)
 
     def print_all(self, ID = None):
         """print_pipelineprint alll commands"""
         self.print_pipeline(2, ID)
 
-    def run_pipeline(self):
-        self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
-        for ID, pipeline in self.pipelines.items():
-            self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.test, self.run_csv))
-        self.pool.close()
-        self.pool.join()
-        self.pool.terminate()
+    def run_pipeline(self, run = 1):
+        if run == 2:
+            self.print_all()
+        elif run == 3:
+            self.print_runned()
+        elif run == 0 or run == 1:
+            self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
+            for ID, pipeline in self.pipelines.items():
+                self.pool.apply_async(Pipeline.run, args = (ID, pipeline, run, self.run_csv))
+            self.pool.close()
+            self.pool.join()
+            self.pool.terminate()
+        else:
+            print("run parameter wrong")
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
-    def run(ID, pipeline, test, run_csv):
+    def run(ID, pipeline, run, run_csv):
         for procedure in pipeline:
             try:
                 mark, cmd, target, log, record_on_error, runned = procedure
@@ -225,9 +231,10 @@ class Pipeline(object):
                     continue
                 start_time = datetime.datetime.now()
                 now        = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                print("================ %s ===============\n%s\n" % (now, cmd))
-                if not test:
+                print("================ %s %s %s ===============\n%s\n" % (now, ID, mark, cmd))
+                if run:
                     if log:
+                        # 输出到log文件
                         with open(log, 'wb') as file_out:
                             p = subprocess.Popen(cmd, stdout = file_out, stderr = file_out, shell = True)
                             p.wait()
