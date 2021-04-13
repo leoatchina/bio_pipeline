@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File              : pipeline.py
+# Author            : taotao <taotao@myhexin.com>
+# Date              : 2021.04.13
+# Last Modified Date: 2021.04.13
+# Last Modified By  : taotao <taotao@myhexin.com>
 # coding:utf8
 # type: ignore
+
 import os
 import traceback
 import collections
@@ -179,7 +186,7 @@ class Pipeline(object):
             # 只打印指定的id
             if ID is not None:
                 if isinstance(ID, list) or isinstance(ID, tuple):
-                    if not id in ID:
+                    if id not in ID:
                         continue
                 elif id != ID:
                     continue
@@ -187,10 +194,14 @@ class Pipeline(object):
             pipeline = self.pipelines[id]
             for procedure in pipeline:
                 mark, cmd, target, log, record_on_error, runned = procedure
-                if print_runned == 2:
+                # 打全部
+                if print_runned == 1:
                     print("========================= %s =============================" % mark)
                     print(cmd)
-                elif print_runned == 1 and runned:
+                elif print_runned == 2 and runned:
+                    print("========================= %s =============================" % mark)
+                    print(cmd)
+                elif print_runned == 3 and not runned:
                     print("========================= %s =============================" % mark)
                     print(cmd)
                 elif not runned:
@@ -198,26 +209,32 @@ class Pipeline(object):
                     print(cmd)
             print()
 
-    def print_runned(self, ID = None):
-        """print runned commands"""
-        self.print_pipeline(1, ID)
-
     def print_all(self, ID = None):
         """print_pipelineprint alll commands"""
+        self.print_pipeline(1, ID)
+
+    def print_runned(self, ID = None):
+        """print runned commands"""
         self.print_pipeline(2, ID)
 
+    def print_torun(self, ID = None):
+        """print to run commands"""
+        self.print_pipeline(3, ID)
+
     def run_pipeline(self, run = 1):
-        if run == 2:
+        if run == 0:
             self.print_all()
-        elif run == 3:
-            self.print_runned()
-        elif run == 0 or run == 1:
+        elif run == 1:
             self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
             for ID, pipeline in self.pipelines.items():
                 self.pool.apply_async(Pipeline.run, args = (ID, pipeline, run, self.run_csv))
             self.pool.close()
             self.pool.join()
             self.pool.terminate()
+        elif run == 2:
+            self.print_runned()
+        elif run == 3:
+            self.print_torun()
         else:
             print("run parameter wrong")
 
@@ -232,21 +249,20 @@ class Pipeline(object):
                 start_time = datetime.datetime.now()
                 now        = start_time.strftime("%Y-%m-%d %H:%M:%S")
                 print("================ %s %s %s ===============\n%s\n" % (now, ID, mark, cmd))
-                if run:
-                    if log:
-                        # 输出到log文件
-                        with open(log, 'wb') as file_out:
-                            p = subprocess.Popen(cmd, stdout = file_out, stderr = file_out, shell = True)
-                            p.wait()
-                    else:
-                        subprocess.check_output(cmd, shell = True)
-                    end_time          = datetime.datetime.now()
-                    cost_time_reform  = str(end_time - start_time)
-                    start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                    end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
-                    if run_csv:
-                        write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
-                    print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
+                # 输出到log文件
+                if log:
+                    with open(log, 'wb') as file_out:
+                        p = subprocess.Popen(cmd, stdout = file_out, stderr = file_out, shell = True)
+                        p.wait()
+                else:
+                    subprocess.check_output(cmd, shell = True)
+                end_time          = datetime.datetime.now()
+                cost_time_reform  = str(end_time - start_time)
+                start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
+                end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
+                if run_csv:
+                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
+                print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
             except subprocess.CalledProcessError:
                 end_time          = datetime.datetime.now()
                 cost_time_reform  = str(end_time - start_time)
