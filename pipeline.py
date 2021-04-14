@@ -158,11 +158,10 @@ class Pipeline(object):
             else:
                 # create record csv if not exists
                 os.system("echo 'ID,mark,target,start_time,end_time,cost_time' > %s" % self.run_csv)
-    #
-    def append(self, ID, mark, cmd, is_system_cmd = 1, target = None, log = None, run_sync = False, record_on_error = False):
+
+    def append(self, ID, mark, cmd, log = None, target = None, system_cmd = True, record_on_error = False):
         """
-        1. TODO run_syn, diffrerent targets of same mark will run async, for example, different lan sequence file from a same source
-        2. TODO, is_system_cmd mean use os.popen(cmd), otherwise python command
+        TODO, system_cmd mean use os.popopen(cmd), otherwise python command
         """
         if target is None or len(target.strip()) == 0:
             target = ""
@@ -222,6 +221,10 @@ class Pipeline(object):
         if run == 0:
             self.print_all()
         elif run == 1:
+            if self.run_csv:
+                bak_csv = re.sub(".csv$", ".%s.csv" % datetime.datetime.now().strftime("%Y%m%d%H%M"), self.run_csv)
+                os.system("cp %s %s" % (self.run_csv, bak_csv))
+
             self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
             for ID, pipeline in self.pipelines.items():
                 self.pool.apply_async(Pipeline.run, args = (ID, pipeline, run, self.run_csv))
