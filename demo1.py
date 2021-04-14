@@ -4,14 +4,14 @@ import argparse
 from pipeline import Pipeline
 
 parser = argparse.ArgumentParser(description = "ngs demo pipeline")
-parser.add_argument('-t', type = int, help = "test mode OR not,1 for true, 0 for false", default = 1, dest = 'test')
+parser.add_argument('-t', type = int, help = "run mode OR not run, 1 for true, 0 for false", default = 1, dest = 'run')
 args = parser.parse_args()
 os.system("mkdir -p demo/output")
 demo_record = "demo/output/demo.csv"
 
 
 # create pipeline
-pipeline = Pipeline(demo_record, test = args.test)
+pipeline = Pipeline(demo_record)
 
 fq1 = "demo/input/SRR1770413_1.head.fastq.gz"
 fq2 = "demo/input/SRR1770413_2.head.fastq.gz"
@@ -61,4 +61,4 @@ gatk_vcf_template = "java -Xmx4g -Djava.io.tmpdir=/tmp \
 gatk_vcf_cmd = gatk_vcf_template.format(ID, ID)
 pipeline.append(ID, "gatk_vcf", gatk_vcf_cmd, log = "demo/output/gatk_vcf.log")
 
-pipeline.run_pipeline()
+pipeline.run_pipeline(args.run)
