@@ -178,7 +178,7 @@ class Pipeline(object):
             else:
                 self.pipelines[ID] = deque([(mark, cmd, target, log, record_on_error, False)])
 
-    def print_pipeline(self, print_runned = 0, ID = None):
+    def print_pipeline(self, print_runned = 1, ID = None):
         """
         print command
         """
@@ -202,9 +202,6 @@ class Pipeline(object):
                     print("========================= %s =============================" % mark)
                     print(cmd)
                 elif print_runned == 3 and not runned:
-                    print("========================= %s =============================" % mark)
-                    print(cmd)
-                elif not runned:
                     print("========================= %s =============================" % mark)
                     print(cmd)
             print()
