@@ -177,7 +177,7 @@ class Pipeline(object):
             else:
                 self.pipelines[ID] = deque([(mark, cmd, target, log, record_on_error, False)])
 
-    def print_pipeline(self, print_runned = 1, ID = None):
+    def print_pipeline(self, print_type = "torun", ID = None):
         """
         print command
         """
@@ -194,75 +194,81 @@ class Pipeline(object):
             for procedure in pipeline:
                 mark, cmd, target, log, record_on_error, runned = procedure
                 # 打全部
-                if print_runned == 1:
+                if print_type == "all":
                     print("========================= %s =============================" % mark)
                     print(cmd)
-                elif print_runned == 2 and runned:
+                elif print_type == "runned" and runned:
                     print("========================= %s =============================" % mark)
                     print(cmd)
-                elif print_runned == 3 and not runned:
+                elif print_type == "torun" and not runned:
                     print("========================= %s =============================" % mark)
                     print(cmd)
             print()
 
     def print_all(self, ID = None):
         """print_pipelineprint alll commands"""
-        self.print_pipeline(1, ID)
+        self.print_pipeline('all', ID)
 
     def print_runned(self, ID = None):
         """print runned commands"""
-        self.print_pipeline(2, ID)
+        self.print_pipeline('runned', ID)
 
     def print_torun(self, ID = None):
         """print to run commands"""
-        self.print_pipeline(3, ID)
+        self.print_pipeline("torun", ID)
 
     def run_pipeline(self, run = 1):
         if run == 0:
-            self.print_all()
+            self.print_torun()
         elif run == 1:
             if self.run_csv:
                 bak_csv = re.sub(".csv$", ".%s.csv" % datetime.datetime.now().strftime("%Y%m%d%H%M"), self.run_csv)
                 os.system("cp %s %s" % (self.run_csv, bak_csv))
-
+            # TODO add ctrl-c exception
+            # for example bqsr and apply_bqsr
             self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
-            for ID, pipeline in self.pipelines.items():
-                self.pool.apply_async(Pipeline.run, args = (ID, pipeline, run, self.run_csv))
-            self.pool.close()
+            try:
+                for ID, pipeline in self.pipelines.items():
+                    # self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.run_csv,))
+                    self.pool.map_async(Pipeline.run, [ID, pipeline, self.run_csv])
+            except KeyboardInterrupt:
+                print('==================== catch keyboardinterupterror =========================')
+                self.pool.terminate()
+            except Exception:
+                traceback.print_exc()
+                self.pool.terminate()
+            else:
+                print("All jobs finished")
+                self.pool.close()
             self.pool.join()
-            self.pool.terminate()
         elif run == 2:
             self.print_runned()
         elif run == 3:
-            self.print_torun()
+            self.print_all()
         else:
             print("run parameter wrong")
 
     # run is staticmethod, it could not be contained in class Pipeline
     @staticmethod
-    def run(ID, pipeline, run, run_csv):
+    def run(ID, pipeline, run_csv):
+        processes = []
         for procedure in pipeline:
             try:
                 mark, cmd, target, log, record_on_error, runned = procedure
                 if runned:
                     continue
                 start_time = datetime.datetime.now()
-                now        = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                print("================ %s %s %s ===============\n%s\n" % (now, ID, mark, cmd))
+                start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
+                print("================ %s %s %s ===============\n%s\n" % (start_time_reform, ID, mark, cmd))
                 # 输出到log文件
                 if log:
                     with open(log, 'wb') as file_out:
                         p = subprocess.Popen(cmd, stdout = file_out, stderr = file_out, shell = True)
+                        processes.append(p)
                         p.wait()
                 else:
-                    subprocess.check_output(cmd, shell = True)
-                end_time          = datetime.datetime.now()
-                cost_time_reform  = str(end_time - start_time)
-                start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
-                if run_csv:
-                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
-                print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
+                    p = subprocess.check_output(cmd, shell = True)
+                    processes.append(p)
             except subprocess.CalledProcessError:
                 end_time          = datetime.datetime.now()
                 cost_time_reform  = str(end_time - start_time)
@@ -273,6 +279,13 @@ class Pipeline(object):
                     print("{}:{}, started at {}, errored at {}, but still record".format(ID, mark, start_time_reform, end_time_reform))
                 else:
                     print("{}:{}, started at {}, errored at {}, and not record".format(ID, mark, start_time_reform, end_time_reform))
+                continue
             except Exception as ex:
-                traceback.print_exc()
                 raise ex
+
+            end_time = datetime.datetime.now()
+            end_time_reform  = end_time.strftime("%Y-%m-%d %H:%M:%S")
+            cost_time_reform = str(end_time - start_time)
+            if run_csv:
+                write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
+            print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
