@@ -229,8 +229,8 @@ class Pipeline(object):
             self.pool = Pool(self.sync_cnt, init_worker, maxtasksperchild = self.sync_cnt)
             try:
                 for ID, pipeline in self.pipelines.items():
-                    # self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.run_csv,))
-                    self.pool.map_async(Pipeline.run, [ID, pipeline, self.run_csv])
+                    self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.run_csv,))
+                    # self.pool.map_async(Pipeline.run, [ID, pipeline, self.run_csv])
             except KeyboardInterrupt:
                 print('==================== catch keyboardinterupterror =========================')
                 self.pool.terminate()
@@ -238,7 +238,6 @@ class Pipeline(object):
                 traceback.print_exc()
                 self.pool.terminate()
             else:
-                print("All jobs finished")
                 self.pool.close()
             self.pool.join()
         elif run == 2:
