@@ -275,9 +275,9 @@ class Pipeline(object):
                 end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
                 if record_on_error and run_csv:
                     write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
-                    print("{}:{}, started at {}, errored at {}, but still record".format(ID, mark, start_time_reform, end_time_reform))
+                    print("{}:{}:{}, started at {}, errored at {}, but still record".format(ID, mark, target, start_time_reform, end_time_reform))
                 else:
-                    print("{}:{}, started at {}, errored at {}, and not record".format(ID, mark, start_time_reform, end_time_reform))
+                    print("{}:{}:{}, started at {}, errored at {}, and not record".format(ID, mark, target, start_time_reform, end_time_reform))
                 continue
             except Exception as ex:
                 raise ex
