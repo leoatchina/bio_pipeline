@@ -258,7 +258,7 @@ class Pipeline(object):
                     continue
                 start_time = datetime.datetime.now()
                 start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                print("================ %s %s %s ===============\n%s\n" % (start_time_reform, ID, mark, cmd))
+                print("================ %s %s %s %s ===============\n%s\n" % (start_time_reform, ID, mark, target, cmd))
                 # 输出到log文件
                 if log:
                     with open(log, 'wb') as file_out:
@@ -287,4 +287,4 @@ class Pipeline(object):
             cost_time_reform = str(end_time - start_time)
             if run_csv:
                 write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
-            print("{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, start_time_reform, end_time_reform, cost_time_reform))
+            print("{}:{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, target, start_time_reform, end_time_reform, cost_time_reform))
