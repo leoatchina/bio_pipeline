@@ -231,7 +231,6 @@ class Pipeline(object):
             try:
                 for ID, pipeline in self.pipelines.items():
                     self.pool.apply_async(Pipeline.run, args = (ID, pipeline, self.run_csv,))
-                    # self.pool.map_async(Pipeline.run, [ID, pipeline, self.run_csv])
             except KeyboardInterrupt:
                 print('==================== catch keyboardinterupterror =========================')
                 self.pool.terminate()
@@ -241,6 +240,7 @@ class Pipeline(object):
             else:
                 self.pool.close()
             self.pool.join()
+            # TODO, add callculate to total cost_time of a ID
         elif run == 2:
             self.print_runned()
         elif run == 3:
