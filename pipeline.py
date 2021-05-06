@@ -147,17 +147,18 @@ class Pipeline(object):
                 lines = lines[1:]
                 # sometimes recorded time cover more than 1 cells, so combine them
                 for line in lines:
-                    if len(line) > 6:
-                        line[5] = ",".join(line[5:])
-                    line = [each.strip() for each in line[:6]]
-                    ID, mark, target, start_time, end_time, cost_time = line
+                    # 因为会有某些程序要运行超过1天的情况, 会出现预期之外的“， ”
+                    # 这个时候，最后一个数字是以秒为单位， 而他前面几个
+                    cost_time = line[-1].strip()
+                    line = [each.strip() for each in line[:5]]
+                    ID, mark, target, start_time, end_time = line
                     if target is None or len(target.strip()) == 0:
                         target = ""
                     runned = "%s:%s:%s" % (ID, mark, target)
                     self.run_array[runned] = "%s %s %s" % (start_time, end_time, cost_time)
             else:
                 # create record csv if not exists
-                os.system("echo 'ID,mark,target,start_time,end_time,cost_time' > %s" % self.run_csv)
+                os.system("echo 'ID,mark,target,start_time,end_time,cost_time_reform,cost_time' > %s" % self.run_csv)
 
     def append(self, ID, mark, cmd, log = None, target = None, system_cmd = True, record_on_error = False):
         """
@@ -268,13 +269,16 @@ class Pipeline(object):
                 else:
                     p = subprocess.check_output(cmd, shell = True)
                     processes.append(p)
+            # FIXME:
             except subprocess.CalledProcessError:
                 end_time          = datetime.datetime.now()
-                cost_time_reform  = str(end_time - start_time)
+                cost_time         = end_time - start_time
+                cost_time_reform  = str(cost_time)
+                cost_time         = str(cost_time.total_seconds())
                 start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
                 end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
                 if record_on_error and run_csv:
-                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
+                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform, cost_time)
                     print("{}:{}:{}, started at {}, errored at {}, but still record".format(ID, mark, target, start_time_reform, end_time_reform))
                 else:
                     print("{}:{}:{}, started at {}, errored at {}, and not record".format(ID, mark, target, start_time_reform, end_time_reform))
@@ -282,9 +286,12 @@ class Pipeline(object):
             except Exception as ex:
                 raise ex
 
-            end_time = datetime.datetime.now()
-            end_time_reform  = end_time.strftime("%Y-%m-%d %H:%M:%S")
-            cost_time_reform = str(end_time - start_time)
+            end_time          = datetime.datetime.now()
+            cost_time         = end_time - start_time
+            cost_time_reform  = str(cost_time)
+            cost_time         = str(cost_time.total_seconds())
+            start_time_reform = start_time.strftime("%Y-%m-%d %H:%M:%S")
+            end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
             if run_csv:
-                write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform)
-            print("{}:{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, target, start_time_reform, end_time_reform, cost_time_reform))
+                write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform, cost_time)
+            print("{}:{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, target, start_time_reform, end_time_reform, cost_time))
