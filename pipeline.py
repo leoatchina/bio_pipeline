@@ -273,7 +273,7 @@ class Pipeline(object):
             except subprocess.CalledProcessError:
                 end_time          = datetime.datetime.now()
                 cost_time         = end_time - start_time
-                cost_time_reform  = cost_time.strftime("%H:%M:%S")
+                cost_time_reform  = str(cost_time)
                 cost_time         = str(cost_time.total_seconds())
                 end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
                 if record_on_error and run_csv:
@@ -281,15 +281,14 @@ class Pipeline(object):
                     print("{}:{}:{}, started at {}, errored at {}, but still record".format(ID, mark, target, start_time_reform, end_time_reform))
                 else:
                     print("{}:{}:{}, started at {}, errored at {}, and not record".format(ID, mark, target, start_time_reform, end_time_reform))
-                continue
             except Exception as ex:
                 raise ex
-
-            end_time          = datetime.datetime.now()
-            cost_time         = end_time - start_time
-            cost_time_reform  = cost_time.strftime("%H:%M:%S")
-            cost_time         = str(cost_time.total_seconds())
-            end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
-            if run_csv:
-                write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform, cost_time)
-            print("{}:{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, target, start_time_reform, end_time_reform, cost_time))
+            else:
+                end_time          = datetime.datetime.now()
+                cost_time         = end_time - start_time
+                cost_time_reform  = str(cost_time)
+                cost_time         = str(cost_time.total_seconds())
+                end_time_reform   = end_time.strftime("%Y-%m-%d %H:%M:%S")
+                if run_csv:
+                    write_to_csv(run_csv, ID, mark, target, start_time_reform, end_time_reform, cost_time_reform, cost_time)
+                print("{}:{}:{}, start at {}, fininshed at {}, cost {}".format(ID, mark, target, start_time_reform, end_time_reform, cost_time))
